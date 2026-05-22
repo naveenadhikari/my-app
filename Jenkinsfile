@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent none  // ← changed from "any"
 
     environment {
         IMAGE_NAME = 'my-app'
@@ -9,31 +9,35 @@ pipeline {
     stages {
 
         stage('Checkout') {
+            agent any
             steps {
                 echo 'Pulling latest code...'
                 checkout scm
             }
         }
 
-        stage('Install dependencies') {
+        stage('Install & Test') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    args '-u root'  // run as root inside the container
+                }
+            }
             steps {
                 sh 'npm install'
-            }
-        }
-
-        stage('Run tests') {
-            steps {
                 sh 'npm test'
             }
         }
 
         stage('Build Docker image') {
+            agent any
             steps {
                 sh 'docker build -t $IMAGE_NAME .'
             }
         }
 
         stage('Deploy') {
+            agent any
             steps {
                 sh '''
                     docker stop $CONTAINER_NAME || true
@@ -46,11 +50,7 @@ pipeline {
     }
 
     post {
-        success {
-            echo 'Pipeline succeeded! App is live.'
-        }
-        failure {
-            echo 'Pipeline failed. Check the logs above.'
-        }
+        success { echo 'Pipeline succeeded! App is live.' }
+        failure { echo 'Pipeline failed. Check the logs above.' }
     }
 }
