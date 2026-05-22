@@ -52,5 +52,5 @@ pipeline {
     post {
         success { echo 'Pipeline succeeded! App is live.' }
         failure { echo 'Pipeline failed. Check the logs above.' }
-    }
+    
 }
