@@ -1,5 +1,5 @@
 pipeline {
-    agent none  // ← changed from "any"
+    agent none  
 
     environment {
         IMAGE_NAME = 'my-app'
@@ -20,7 +20,7 @@ pipeline {
             agent {
                 docker {
                     image 'node:18-alpine'
-                    args '-u root'  // run as root inside the container
+                    args '-u root'  
                 }
             }
             steps {
