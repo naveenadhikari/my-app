@@ -2,9 +2,9 @@ pipeline {
     agent none
 
     environment {
-        IMAGE_NAME      = 'my-app'
-        DOCKER_USERNAME = 'naveenadhikari'
-        CONTAINER_NAME  = 'my-app-running'
+        IMAGE_NAME      = 'my-jenkinsapp'
+        DOCKER_USERNAME = 'naveen1708'
+        CONTAINER_NAME  = 'my-jenkinsapp-running'
         SERVER_IP       = '52.65.188.62'
     }
 
