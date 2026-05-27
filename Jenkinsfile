@@ -3,9 +3,10 @@ pipeline {
 
     environment {
         IMAGE_NAME      = 'my-jenkinsapp'
-        DOCKER_USERNAME = 'naveen1708'
         CONTAINER_NAME  = 'my-jenkinsapp-running'
-        SERVER_IP       = '52.65.188.62'
+        DOCKER_USERNAME = credentials('docker-username')
+        SERVER_IP       = credentials('server-ip')
+        DOCKER_CREDS    = credentials('docker-hub-creds')
     }
 
     stages {
@@ -41,16 +42,14 @@ pipeline {
         stage('Push to Docker Hub') {
             agent any
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'd97fb965-0bf3-4145-9d57-0d2a21a6c10d',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh """
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push ${DOCKER_USERNAME}/${IMAGE_NAME}:latest
-                    """
-                }
+                // using DOCKER_CREDS from environment block
+                // DOCKER_CREDS_USR = username
+                // DOCKER_CREDS_PSW = password
+                // no UUID needed here anymore
+                sh """
+                    echo $DOCKER_CREDS_PSW | docker login -u $DOCKER_CREDS_USR --password-stdin
+                    docker push ${DOCKER_USERNAME}/${IMAGE_NAME}:latest
+                """
             }
         }
 
