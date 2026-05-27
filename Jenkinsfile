@@ -6,7 +6,7 @@ pipeline {
         CONTAINER_NAME  = 'my-jenkinsapp-running'
         DOCKER_USERNAME = credentials('docker-username')
         SERVER_IP       = credentials('server-ip')
-        DOCKER_CREDS    = credentials('docker-hub-creds')
+        DOCKER_CREDS    = credentials('d97fb965-0bf3-4145-9d57-0d2a21a6c10d')
     }
 
     stages {
