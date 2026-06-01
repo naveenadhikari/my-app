@@ -42,7 +42,6 @@ pipeline {
         stage('Push to Docker Hub') {
             agent any
             steps {
-               
                 sh """
                     echo $DOCKER_CREDS_PSW | docker login -u $DOCKER_CREDS_USR --password-stdin
                     docker push ${DOCKER_USERNAME}/${IMAGE_NAME}:latest
@@ -59,25 +58,14 @@ pipeline {
                     keyFileVariable: 'SSH_KEY'
                 )]) {
                     sh """
-                        ssh -i $SSH_KEY \
-                            -o StrictHostKeyChecking=no \ 
-                            ubuntu@${SERVER_IP} "
-                                docker pull ${DOCKER_USERNAME}/${IMAGE_NAME}:latest &&
-                                docker stop ${CONTAINER_NAME} || true &&
-                                docker rm ${CONTAINER_NAME} || true &&
-                                docker run -d \
-                                    --name ${CONTAINER_NAME} \
-                                    --restart unless-stopped \
-                                    -p 3000:3000 \
-                                    ${DOCKER_USERNAME}/${IMAGE_NAME}:latest
-                        "
+                        ssh -i \$SSH_KEY -o StrictHostKeyChecking=no ubuntu@\${SERVER_IP} "docker pull \${DOCKER_USERNAME}/\${IMAGE_NAME}:latest && docker stop \${CONTAINER_NAME} || true && docker rm \${CONTAINER_NAME} || true && docker run -d --name \${CONTAINER_NAME} --restart unless-stopped -p 3000:3000 \${DOCKER_USERNAME}/\${IMAGE_NAME}:latest"
                     """
                 }
-                echo "App live at http://${SERVER_IP}:3000"
+                echo "App live at http://\${SERVER_IP}:3000"
             }
         }
 
-    }
+    }  // ← closes stages
 
     post {
         success {
@@ -88,4 +76,5 @@ pipeline {
             echo 'Pipeline failed. Check the logs above.'
         }
     }
-}
+
+}  
