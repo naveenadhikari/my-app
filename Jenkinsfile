@@ -60,7 +60,7 @@ pipeline {
                 )]) {
                     sh """
                         ssh -i $SSH_KEY \
-                            -o StrictHostKeyChecking=no \ // Disable host key checking for simplicity
+                            -o StrictHostKeyChecking=no \ 
                             ubuntu@${SERVER_IP} "
                                 docker pull ${DOCKER_USERNAME}/${IMAGE_NAME}:latest &&
                                 docker stop ${CONTAINER_NAME} || true &&
@@ -82,6 +82,7 @@ pipeline {
     post {
         success {
             echo 'Pipeline succeeded! App is live on server.'
+            echo "Access it at http://${SERVER_IP}:3000"
         }
         failure {
             echo 'Pipeline failed. Check the logs above.'
