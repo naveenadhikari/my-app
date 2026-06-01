@@ -60,7 +60,7 @@ pipeline {
                 )]) {
                     sh """
                         ssh -i $SSH_KEY \
-                            -o StrictHostKeyChecking=no \
+                            -o StrictHostKeyChecking=no \ // Disable host key checking for simplicity
                             ubuntu@${SERVER_IP} "
                                 docker pull ${DOCKER_USERNAME}/${IMAGE_NAME}:latest &&
                                 docker stop ${CONTAINER_NAME} || true &&
