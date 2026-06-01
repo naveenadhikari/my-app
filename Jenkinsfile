@@ -42,10 +42,7 @@ pipeline {
         stage('Push to Docker Hub') {
             agent any
             steps {
-                // using DOCKER_CREDS from environment block
-                // DOCKER_CREDS_USR = username
-                // DOCKER_CREDS_PSW = password
-                // no UUID needed here anymore
+               
                 sh """
                     echo $DOCKER_CREDS_PSW | docker login -u $DOCKER_CREDS_USR --password-stdin
                     docker push ${DOCKER_USERNAME}/${IMAGE_NAME}:latest
