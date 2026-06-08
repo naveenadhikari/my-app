@@ -87,9 +87,10 @@ pipeline {
 
     }
 
-    post {
+   post {
 
-        success {
+    success {
+        node {
             script {
                 echo 'Deployment succeeded. Getting AI health report...'
 
@@ -122,17 +123,15 @@ Build: #${env.BUILD_NUMBER}
                 """
             }
         }
+    }
 
-        failure {
+    failure {
+        node {
             script {
                 echo 'Pipeline failed. Getting AI analysis...'
 
-                def logs = currentBuild.rawBuild
-                    .getLog(80)
-                    .join(' ')
-                    .replaceAll('"', '')
-                    .replaceAll("'", '')
-                    .take(2000)
+                // ✅ Replaced currentBuild.rawBuild (sandbox-blocked) with safe env vars
+                def logs = "Build #${env.BUILD_NUMBER} failed. Branch: ${env.GIT_BRANCH}. Stage failures in pipeline for job ${env.JOB_NAME}. Duration: ${currentBuild.durationString}. Check logs at ${env.BUILD_URL}console"
 
                 def response = sh(
                     script: """
@@ -161,10 +160,11 @@ Logs: ${env.BUILD_URL}console
                 """
             }
         }
-
-        always {
-            echo "Pipeline finished - Build #${env.BUILD_NUMBER}"
-        }
-
     }
+
+    always {
+        echo "Pipeline finished - Build #${env.BUILD_NUMBER}"
+    }
+
+}
 }
