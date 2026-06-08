@@ -90,7 +90,7 @@ pipeline {
    post {
 
     success {
-        node {
+        node('') {
             script {
                 echo 'Deployment succeeded. Getting AI health report...'
 
@@ -126,12 +126,11 @@ Build: #${env.BUILD_NUMBER}
     }
 
     failure {
-        node {
+        node('') {
             script {
                 echo 'Pipeline failed. Getting AI analysis...'
 
-                // ✅ Replaced currentBuild.rawBuild (sandbox-blocked) with safe env vars
-                def logs = "Build #${env.BUILD_NUMBER} failed. Branch: ${env.GIT_BRANCH}. Stage failures in pipeline for job ${env.JOB_NAME}. Duration: ${currentBuild.durationString}. Check logs at ${env.BUILD_URL}console"
+                def logs = "Build #${env.BUILD_NUMBER} failed. Branch: ${env.GIT_BRANCH}. Job: ${env.JOB_NAME}. Duration: ${currentBuild.durationString}. Logs at ${env.BUILD_URL}console"
 
                 def response = sh(
                     script: """
