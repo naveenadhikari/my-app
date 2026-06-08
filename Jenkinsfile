@@ -2,12 +2,11 @@ pipeline {
     agent none
 
     environment {
-        IMAGE_NAME        = 'my-jenkinsapp'
-        CONTAINER_NAME    = 'my-jenkinsapp-running'
-        DOCKER_USERNAME   = credentials('docker-username')
-        SERVER_IP         = credentials('server-ip')
-        DOCKER_CREDS      = credentials('d97fb965-0bf3-4145-9d57-0d2a21a6c10d')
-        GEMINI_API_KEY    = credentials('gemini-api-key')
+        IMAGE_NAME     = 'my-jenkinsapp'
+        CONTAINER_NAME = 'my-jenkinsapp-running'
+        DOCKER_USERNAME = credentials('docker-username')
+        SERVER_IP      = credentials('server-ip')
+        DOCKER_CREDS   = credentials('d97fb965-0bf3-4145-9d57-0d2a21a6c10d')
     }
 
     stages {
@@ -84,36 +83,115 @@ pipeline {
                 }
             }
         }
-
     }
+
     post {
-    success {
-        node('built-in') {
-            withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
-                sh """
-                    curl -X POST \$SLACK_URL \
-                    -H 'Content-type: application/json' \
-                    --data '{"text":"✅ *PASSED* | *${env.JOB_NAME}* | Branch: ${env.BRANCH_NAME} | Build #${env.BUILD_NUMBER}"}'
-                """
+
+        success {
+            node('') {
+                withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
+                    script {
+                        def duration = currentBuild.durationString.replace(' and counting', '')
+                        def appUrl   = "http://${env.SERVER_IP}:3000"
+                        def health   = env.HEALTH_RESPONSE ?: 'N/A'
+
+                        def payload = """
+                        {
+                            "blocks": [
+                                {
+                                    "type": "header",
+                                    "text": { "type": "plain_text", "text": "✅ Deployment Successful" }
+                                },
+                                {
+                                    "type": "section",
+                                    "fields": [
+                                        { "type": "mrkdwn", "text": "*Job:*\\n${env.JOB_NAME}" },
+                                        { "type": "mrkdwn", "text": "*Build:*\\n#${env.BUILD_NUMBER}" },
+                                        { "type": "mrkdwn", "text": "*Branch:*\\n${env.GIT_BRANCH}" },
+                                        { "type": "mrkdwn", "text": "*Duration:*\\n${duration}" },
+                                        { "type": "mrkdwn", "text": "*Health Check:*\\n${health}" },
+                                        { "type": "mrkdwn", "text": "*App URL:*\\n${appUrl}" }
+                                    ]
+                                },
+                                {
+                                    "type": "actions",
+                                    "elements": [
+                                        {
+                                            "type": "button",
+                                            "text": { "type": "plain_text", "text": "View Build Logs" },
+                                            "url": "${env.BUILD_URL}console"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """
+
+                        sh """
+                            curl -s -X POST \$SLACK_URL \
+                            -H 'Content-type: application/json' \
+                            --data '${payload}'
+                        """
+                    }
+                }
             }
         }
-    }
 
-    failure {
-        node('built-in') {
-            withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
-                sh """
-                    curl -X POST \$SLACK_URL \
-                    -H 'Content-type: application/json' \
-                    --data '{"text":"❌ *FAILED* | *${env.JOB_NAME}* | Branch: ${env.BRANCH_NAME} | Build #${env.BUILD_NUMBER}"}'
-                """
+        failure {
+            node('') {
+                withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
+                    script {
+                        def duration   = currentBuild.durationString.replace(' and counting', '')
+                        def failedStage = currentBuild.result ?: 'UNKNOWN'
+
+                        def payload = """
+                        {
+                            "blocks": [
+                                {
+                                    "type": "header",
+                                    "text": { "type": "plain_text", "text": "❌ Deployment Failed" }
+                                },
+                                {
+                                    "type": "section",
+                                    "fields": [
+                                        { "type": "mrkdwn", "text": "*Job:*\\n${env.JOB_NAME}" },
+                                        { "type": "mrkdwn", "text": "*Build:*\\n#${env.BUILD_NUMBER}" },
+                                        { "type": "mrkdwn", "text": "*Branch:*\\n${env.GIT_BRANCH}" },
+                                        { "type": "mrkdwn", "text": "*Duration:*\\n${duration}" },
+                                        { "type": "mrkdwn", "text": "*Status:*\\n${failedStage}" },
+                                        { "type": "mrkdwn", "text": "*Triggered by:*\\n${env.BUILD_USER_ID ?: 'SCM / Timer'}" }
+                                    ]
+                                },
+                                {
+                                    "type": "section",
+                                    "text": { "type": "mrkdwn", "text": "🔍 *Check the console logs to find the exact failed stage and error.*" }
+                                },
+                                {
+                                    "type": "actions",
+                                    "elements": [
+                                        {
+                                            "type": "button",
+                                            "text": { "type": "plain_text", "text": "View Failure Logs" },
+                                            "url": "${env.BUILD_URL}console"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """
+
+                        sh """
+                            curl -s -X POST \$SLACK_URL \
+                            -H 'Content-type: application/json' \
+                            --data '${payload}'
+                        """
+                    }
+                }
             }
         }
-    }
 
-    always {
-        echo "Pipeline finished — Branch: ${env.BRANCH_NAME} | Build: #${env.BUILD_NUMBER}"
+        always {
+            echo "Pipeline finished — Branch: ${env.GIT_BRANCH} | Build: #${env.BUILD_NUMBER}"
+        }
     }
-}
-
 }
