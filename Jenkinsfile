@@ -87,55 +87,57 @@ pipeline {
 
     post {
 
-        success {
-            node('') {
-                withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
-                    script {
-                        def duration = currentBuild.durationString.replace(' and counting', '')
-                        def appUrl   = "http://${env.SERVER_IP}:3000"
-                        def health   = env.HEALTH_RESPONSE ?: 'N/A'
+       success {
+    node('') {
+        withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
+            script {
+                def duration = currentBuild.durationString.replace(' and counting', '')
+                def appUrl   = "http://${env.SERVER_IP}:3000"
+                def health   = (env.HEALTH_RESPONSE ?: 'N/A').replace('"', '\\"')  // ✅ fix here
+                def branch   = env.GIT_BRANCH ?: 'main'                             // ✅ fix null branch
 
-                        def payload = """
+                def payload = """
+                {
+                    "blocks": [
                         {
-                            "blocks": [
+                            "type": "header",
+                            "text": { "type": "plain_text", "text": "✅ Deployment Successful" }
+                        },
+                        {
+                            "type": "section",
+                            "fields": [
+                                { "type": "mrkdwn", "text": "*Job:*\\n${env.JOB_NAME}" },
+                                { "type": "mrkdwn", "text": "*Build:*\\n#${env.BUILD_NUMBER}" },
+                                { "type": "mrkdwn", "text": "*Branch:*\\n${branch}" },
+                                { "type": "mrkdwn", "text": "*Duration:*\\n${duration}" },
+                                { "type": "mrkdwn", "text": "*Health Check:*\\n${health}" },
+                                { "type": "mrkdwn", "text": "*App URL:*\\n${appUrl}" }
+                            ]
+                        },
+                        {
+                            "type": "actions",
+                            "elements": [
                                 {
-                                    "type": "header",
-                                    "text": { "type": "plain_text", "text": "✅ Deployment Successful" }
-                                },
-                                {
-                                    "type": "section",
-                                    "fields": [
-                                        { "type": "mrkdwn", "text": "*Job:*\\n${env.JOB_NAME}" },
-                                        { "type": "mrkdwn", "text": "*Build:*\\n#${env.BUILD_NUMBER}" },
-                                        { "type": "mrkdwn", "text": "*Branch:*\\n${env.GIT_BRANCH}" },
-                                        { "type": "mrkdwn", "text": "*Duration:*\\n${duration}" },
-                                        { "type": "mrkdwn", "text": "*Health Check:*\\n${health}" },
-                                        { "type": "mrkdwn", "text": "*App URL:*\\n${appUrl}" }
-                                    ]
-                                },
-                                {
-                                    "type": "actions",
-                                    "elements": [
-                                        {
-                                            "type": "button",
-                                            "text": { "type": "plain_text", "text": "View Build Logs" },
-                                            "url": "${env.BUILD_URL}console"
-                                        }
-                                    ]
+                                    "type": "button",
+                                    "text": { "type": "plain_text", "text": "View Build Logs" },
+                                    "url": "${env.BUILD_URL}console"
                                 }
                             ]
                         }
-                        """
-
-                        sh """
-                            curl -s -X POST \$SLACK_URL \
-                            -H 'Content-type: application/json' \
-                            --data '${payload}'
-                        """
-                    }
+                    ]
                 }
+                """
+
+                sh """
+                    curl -s -X POST \$SLACK_URL \
+                    -H 'Content-type: application/json' \
+                    --data '${payload}'
+                """
             }
         }
+    }
+}
+        
 
         failure {
             node('') {
