@@ -86,5 +86,34 @@ pipeline {
         }
 
     }
+    post {
+    success {
+        node('built-in') {
+            withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
+                sh """
+                    curl -X POST \$SLACK_URL \
+                    -H 'Content-type: application/json' \
+                    --data '{"text":"✅ *PASSED* | *${env.JOB_NAME}* | Branch: ${env.BRANCH_NAME} | Build #${env.BUILD_NUMBER}"}'
+                """
+            }
+        }
+    }
+
+    failure {
+        node('built-in') {
+            withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
+                sh """
+                    curl -X POST \$SLACK_URL \
+                    -H 'Content-type: application/json' \
+                    --data '{"text":"❌ *FAILED* | *${env.JOB_NAME}* | Branch: ${env.BRANCH_NAME} | Build #${env.BUILD_NUMBER}"}'
+                """
+            }
+        }
+    }
+
+    always {
+        echo "Pipeline finished — Branch: ${env.BRANCH_NAME} | Build: #${env.BUILD_NUMBER}"
+    }
+}
 
 }
